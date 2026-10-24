@@ -14,6 +14,7 @@ const PLUGIN_FILE_PATHS = new Map([
     ["/index.html", "index.html"],
     ["/manifest.json", "manifest.json"],
     ["/plugin.js", "plugin.js"],
+    ["/plugin-2.18.4.js", "plugin.js"],
     ["/index.js", "index.js"],
     ["/icon.jpg", "icon.jpg"],
 ]);
@@ -70,7 +71,10 @@ async function servePluginAsset(req, res, pathname) {
         const content = await fs.readFile(assetPath);
         res.writeHead(200, {
             "content-type": PLUGIN_MIME_TYPES[path.extname(assetPath).toLowerCase()] || "application/octet-stream",
-            "cache-control": "public, max-age=300",
+            "cache-control":
+                relativePath === "manifest.json" || relativePath === "plugin.js"
+                    ? "no-store, max-age=0, must-revalidate"
+                    : "public, max-age=300",
             "x-content-type-options": "nosniff",
             ...PLUGIN_CORS_HEADERS,
         });

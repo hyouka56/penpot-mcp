@@ -1,6 +1,6 @@
 {
     "name": "Penpot MCP Plugin",
-    "code": "plugin.js",
+    "code": "plugin-2.18.4.js",
     "icon": "icon.jpg",
     "version": 2,
     "scope": "global",
