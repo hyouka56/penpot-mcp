@@ -1,4 +1,5 @@
 import http from "node:http";
+import net from "node:net";
 import { spawn } from "node:child_process";
 
 const PORT = Number(process.env.PORT || 3000);
@@ -90,9 +91,59 @@ proxy.on("upgrade", (req, clientSocket, head) => {
 
 proxy.on("clientError", (_error, socket) => socket.end("HTTP/1.1 400 Bad Request\r\n\r\n"));
 
-proxy.listen(PORT, "0.0.0.0", () => {
-    console.log(`Vercel proxy listening on 0.0.0.0:${PORT}; MCP HTTP :${MCP_HTTP_PORT}; MCP WebSocket :${MCP_WS_PORT}`);
-});
+function checkPort(port) {
+    return new Promise((resolve, reject) => {
+        const socket = net.createConnection({ host: "127.0.0.1", port });
+        socket.once("connect", () => {
+            socket.destroy();
+            resolve();
+        });
+        socket.once("error", (error) => {
+            socket.destroy();
+            reject(error);
+        });
+    });
+}
+
+async function waitForPort(port, timeoutMs = 30_000) {
+    const deadline = Date.now() + timeoutMs;
+    let lastError;
+
+    while (Date.now() < deadline) {
+        if (child.exitCode !== null) {
+            throw new Error(`Penpot MCP process exited before port ${port} became ready`);
+        }
+
+        try {
+            await checkPort(port);
+            return;
+        } catch (error) {
+            lastError = error;
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+    }
+
+    throw new Error(`Timed out waiting for Penpot MCP port ${port}: ${lastError?.message || "not ready"}`);
+}
+
+async function startProxy() {
+    try {
+        await Promise.all([waitForPort(MCP_HTTP_PORT), waitForPort(MCP_WS_PORT)]);
+        if (child.exitCode !== null) {
+            throw new Error("Penpot MCP process exited before the proxy became ready");
+        }
+
+        proxy.listen(PORT, "0.0.0.0", () => {
+            console.log(`Vercel proxy listening on 0.0.0.0:${PORT}; MCP HTTP :${MCP_HTTP_PORT}; MCP WebSocket :${MCP_WS_PORT}`);
+        });
+    } catch (error) {
+        console.error("Penpot MCP startup failed:", error.message);
+        child.kill("SIGTERM");
+        process.exit(1);
+    }
+}
+
+startProxy();
 
 function shutdown() {
     proxy.close();
