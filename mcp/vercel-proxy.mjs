@@ -8,7 +8,7 @@ const MCP_WS_PORT = Number(process.env.PENPOT_MCP_WEBSOCKET_PORT || 4402);
 
 const child = spawn(
     process.execPath,
-    ["./dist/index.js", "--multi-user"],
+    ["./dist/index.js"],
     { cwd: new URL("./packages/server/", import.meta.url).pathname, stdio: "inherit", env: process.env }
 );
 
