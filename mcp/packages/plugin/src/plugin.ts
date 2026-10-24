@@ -17,13 +17,13 @@ const isIntegratedRemoteMcp = !!mcp;
 const management = typeof penpotMgmt === "undefined" ? null : penpotMgmt;
 
 /**
- * Extracts the major.minor.patch prefix from a version string.
+ * Extracts the major.minor compatibility prefix from a version string.
  *
- * @param version - a version string starting with major.minor.patch
- * @returns the major.minor.patch prefix, or the original string if it does not match
+ * @param version - a version string starting with major.minor
+ * @returns the major.minor prefix, or the original string if it does not match
  */
 function extractVersionPrefix(version: string): string {
-    const match = version.match(/^(\d+\.\d+\.\d+)/);
+    const match = version.match(/^(\d+\.\d+)/);
     return match ? match[1] : version;
 }
 
