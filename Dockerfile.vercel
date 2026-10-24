@@ -8,6 +8,9 @@ COPY plugins/libs/plugin-types/ ./plugins/libs/plugin-types/
 
 WORKDIR /app/mcp
 
+# Embed the public production WebSocket endpoint in the built Penpot plugin.
+ENV WS_URI=wss://penpot-mcp-hyouka1.vercel.app
+
 # Keep the official server's full tool inventory available in this hosted build.
 # Developer-oriented tools may still need a Penpot dev REPL or local filesystem context.
 RUN sed -i 's/if (this.isFileSystemAccessEnabled()) {/if (this.isFileSystemAccessEnabled() || process.env.ALL_TOOLS === "1") {/' packages/server/src/PenpotMcpServer.ts \
