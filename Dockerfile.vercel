@@ -1,0 +1,28 @@
+FROM node:24-bookworm-slim
+
+RUN corepack enable && corepack prepare pnpm@12.15.0 --activate
+
+WORKDIR /app
+COPY mcp/ ./mcp/
+COPY plugins/libs/plugin-types/ ./plugins/libs/plugin-types/
+
+WORKDIR /app/mcp
+
+# Keep the official server's full tool inventory available in this hosted build.
+# The developer-oriented tools may still need a real Penpot development REPL or
+# filesystem context to operate; exposing them does not replace those services.
+RUN sed -i 's/if (this.isFileSystemAccessEnabled()) {/if (this.isFileSystemAccessEnabled() || process.env.PENPOT_MCP_ENABLE_ALL_TOOLS === "true") {/' packages/server/src/PenpotMcpServer.ts \
+ && sed -i 's/if (shouldRegisterDeveloperTools(this.isDevEnv(), this.isMultiUserMode())) {/if (shouldRegisterDeveloperTools(this.isDevEnv(), this.isMultiUserMode()) || process.env.PENPOT_MCP_ENABLE_ALL_TOOLS === "true") {/' packages/server/src/PenpotMcpServer.ts \
+ && pnpm install --frozen-lockfile \
+ && pnpm run build
+
+ENV NODE_ENV=production
+ENV PENPOT_MCP_SERVER_HOST=127.0.0.1
+ENV PENPOT_MCP_SERVER_PORT=4401
+ENV PENPOT_MCP_WEBSOCKET_PORT=4402
+ENV PENPOT_MCP_REMOTE_MODE=true
+ENV PENPOT_MCP_DEVENV=true
+ENV PENPOT_MCP_ENABLE_ALL_TOOLS=true
+
+EXPOSE 3000
+CMD ["node", "vercel-proxy.mjs"]
